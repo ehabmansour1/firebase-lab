@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <script
+      src="https://kit.fontawesome.com/3162f5d9b2.js"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="css/normalize.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Title</title>
+  </head>
+  <body>
+    <div class="main-content">
+      <div class="form-container">
+        <h2>Student Data Management</h2>
+        <form id="studentForm">
+          <input type="hidden" id="studentId" />
+          <div class="input-group">
+            <input
+              type="text"
+              id="firstName"
+              placeholder="First Name"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <input type="text" id="lastName" placeholder="Last Name" required />
+          </div>
+          <div class="input-group">
+            <input type="number" id="age" placeholder="Age" required min="0" />
+          </div>
+          <div class="input-group">
+            <select id="facultySelect" required>
+              <option value="">Select Faculty</option>
+            </select>
+          </div>
+          <button type="submit">Add Student</button>
+        </form>
+
+        <div id="studentList">
+          <table id="studentTable">
+            <thead>
+              <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Age</th>
+                <th>Faculty</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        set,
+        push,
+        get,
+        child,
+        onValue,
+        update,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+      const firebaseConfig = {
+        apiKey: "AIzaSyAiBFudDE241BSe5Fh_1BtXgaJHaA0iu60",
+        authDomain: "frontend-6c2c2.firebaseapp.com",
+        projectId: "frontend-6c2c2",
+        storageBucket: "frontend-6c2c2.firebasestorage.app",
+        messagingSenderId: "717696312984",
+        appId: "1:717696312984:web:f412176defe24c35da12ed",
+        databaseURL: "https://frontend-6c2c2-default-rtdb.firebaseio.com",
+      };
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      get(child(ref(db), `Faculties`)).then((faculty) => {
+        let facultyData = faculty.toJSON();
+        console.log(facultyData);
+        let facultySelect = document.querySelector("#facultySelect");
+        for (let id in facultyData) {
+          let faculty = facultyData[id];
+          let facultyOption = document.createElement("option");
+          facultyOption.textContent = faculty.Name;
+          facultyOption.value = faculty.Name;
+          facultySelect.appendChild(facultyOption);
+        }
+      });
+      document.querySelector("[type='submit']").onclick = function (event) {
+        event.preventDefault();
+        writeData();
+      };
+      function writeData() {
+        let firstName = document.querySelector("#firstName").value;
+        let lastName = document.querySelector("#lastName").value;
+        let age = document.querySelector("#age").value;
+        let facultyName = document.querySelector("#facultySelect").value;
+        let studentId = document.querySelector("#studentId").value;
+        if (studentId != "") {
+          var updates = {};
+          updates["Students/" + studentId] = {
+            FirstName: firstName,
+            LastName: lastName,
+            Age: age,
+            facultyName: facultyName,
+          };
+          update(ref(db), updates);
+        } else {
+          push(ref(db, "Students"), {
+            FirstName: firstName,
+            LastName: lastName,
+            Age: age,
+            facultyName: facultyName,
+          });
+        }
+        document.querySelector("#firstName").value = "";
+        document.querySelector("#lastName").value = "";
+        document.querySelector("#age").value = "";
+        document.querySelector("#facultySelect").value = "";
+        document.querySelector("#studentId").value = "";
+      
+      }
+      onValue(child(ref(db), "Students"), (response) => {
+        var data = response.toJSON();
+        var studentTableBody = document.querySelector("#studentTableBody");
+        studentTableBody.innerHTML = "";
+        for (let id in data) {
+          let student = data[id];
+          let studentRow = document.createElement("tr");
+          studentRow.innerHTML = `
+            <td>${student.FirstName}</td>
+            <td>${student.LastName}</td>
+            <td>${student.Age}</td>
+            <td>${student.facultyName}</td>
+            <td class='actions'>
+              <button onclick="updateStudent('${id}')" >Edit</button>
+              <button onclick="deleteStudent('${id}')">Delete</button>
+            </td>
+          `;
+          studentTableBody.appendChild(studentRow);
+        }
+      });
+      window.updateStudent = updateStudent;
+      function updateStudent(key) {
+        get(child(ref(db), `Students/${key}`)).then((student) => {
+          console.log(student);
+          console.log(student.toJSON());
+          document.querySelector("#firstName").value = student.val().FirstName;
+          document.querySelector("#lastName").value = student.val().LastName;
+          document.querySelector("#age").value = student.val().Age;
+          document.querySelector("#facultySelect").value =
+            student.val().facultyName;
+          document.querySelector("#studentId").value = key;
+        });
+      }
+      window.deleteStudent = deleteStudent;
+      function deleteStudent(key) {
+        var updates = {};
+        updates["Students/" + key] = null;
+        update(ref(db), updates);
+      }
+    </script>
+  </body>
+</html>

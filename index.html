@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <script
+      src="https://kit.fontawesome.com/3162f5d9b2.js"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="css/normalize.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Title</title>
+  </head>
+  <body>
+    <div class="form-container">
+      <h2>Faculty Data Entry</h2>
+      <form id="facultyForm">
+        <input type="hidden" id="facultyId" />
+        <div class="input-group">
+          <input type="text" id="name" placeholder="Faculty Name" required />
+        </div>
+        <div class="input-group">
+          <input
+            type="text"
+            id="address"
+            placeholder="Faculty Address"
+            required
+          />
+        </div>
+        <button type="submit">Add Faculty</button>
+      </form>
+
+      <div id="facultyList">
+        <table id="facultyTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="facultyTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        set,
+        push,
+        get,
+        child,
+        onValue,
+        update,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAiBFudDE241BSe5Fh_1BtXgaJHaA0iu60",
+        authDomain: "frontend-6c2c2.firebaseapp.com",
+        projectId: "frontend-6c2c2",
+        storageBucket: "frontend-6c2c2.firebasestorage.app",
+        messagingSenderId: "717696312984",
+        appId: "1:717696312984:web:f412176defe24c35da12ed",
+        databaseURL: "https://frontend-6c2c2-default-rtdb.firebaseio.com",
+      };
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      document.querySelector("[type='submit']").onclick = function (event) {
+        event.preventDefault();
+        writeData();
+      };
+      function writeData() {
+        let facultyName = document.querySelector("#name").value;
+        let facultyAddress = document.querySelector("#address").value;
+        let id = document.querySelector("#facultyId").value;
+        if (id != "") {
+          var updates = {};
+          updates["Faculties/" + id] = {
+            Name: facultyName,
+            Address: facultyAddress,
+          };
+          update(ref(db), updates);
+        } else {
+          push(ref(db, "Faculties"), {
+            Name: facultyName,
+            Address: facultyAddress,
+          });
+        }
+        document.querySelector("#name").value = "";
+        document.querySelector("#address").value = "";
+      }
+      onValue(child(ref(db), "Faculties"), (response) => {
+        var data = response.toJSON();
+        let tbody = document.querySelector("#facultyTable tbody");
+        tbody.innerHTML = "";
+        for (var key in data) {
+          tbody.innerHTML += `
+          <tr>
+              <td>${data[key].Name}</td>
+              <td>${data[key].Address}</td>
+              <td class="actions">
+                <button onclick="updateFaculty('${key}')">Edit</button>
+                <button onclick="deleteFaculty('${key}')"> Delete</button>
+              </td>
+            </tr>`;
+        }
+      });
+      window.updateFaculty = updateFaculty;
+      function updateFaculty(key) {
+        get(child(ref(db), `Faculties/${key}`)).then((faculty) => {
+          console.log(faculty.toJSON());
+          document.querySelector("#name").value = faculty.val().Name;
+          document.querySelector("#address").value = faculty.val().Address;
+          document.querySelector("#facultyId").value = key;
+        });
+      }
+      window.deleteFaculty = deleteFaculty;
+      function deleteFaculty(key) {
+        var updates = {};
+        updates["Faculties/" + key] = null;
+        update(ref(db), updates);
+      }
+    </script>
+    <script src="javascript/main.js"></script>
+  </body>
+</html>
