@@ -146,6 +146,9 @@ button:hover {
 .actions button {
   padding: 10px 5px;
 }
+.main-content {
+  max-width:100%;
+}
 select {
   background-color: #26283e;
 }
